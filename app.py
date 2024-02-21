@@ -8,7 +8,6 @@ import os
 from PIL import Image
 import glob
 import requests
-import random
 
 app = Flask(__name__)
 CORS(app)
@@ -57,6 +56,27 @@ def get_file_by_fileName():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             return send_file(file_paths[0], as_attachment=True)
+        else:
+            return "File not found.", 204
+    else:
+        return "File not found.", 204
+
+@app.route('/file/v2', methods=['GET'])
+def get_file_by_fileName_v2():
+    dir = os.path.join('/workspace', 'ComfyUI', 'output')
+    specific_filename = request.args.get('filename')
+
+    if specific_filename:
+        file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
+        if file_paths:
+            with open(file_paths[0], 'rb') as f:
+                files = {'file': (f.name, f, 'multipart/form-data')}
+                response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
+                if response.status_code == 200:
+                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response.data.fileName}"
+                    return {
+                        "downloadURL": downloadURL
+                    }
         else:
             return "File not found.", 204
     else:
