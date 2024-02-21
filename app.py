@@ -79,7 +79,7 @@ def get_file_by_fileName_v2():
                 files = {'file': (specific_filename, f, mime_type)}
                 print(files)
                 try:
-                    response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
+                    response = requests.post('https://hom-agents-lobeui-staging.vercel.app/api/s3-upload', files=files)
                     response.raise_for_status() 
 
                     response_data = response.json()
