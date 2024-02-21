@@ -49,7 +49,7 @@ def get_latest_files():
 
 @app.route('/file', methods=['GET'])
 def get_file_by_fileName():
-    dir = os.path.join('/workspace', 'ComfyUI', 'output')
+    dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
     specific_filename = request.args.get('filename')
 
     if specific_filename:
@@ -63,7 +63,7 @@ def get_file_by_fileName():
 
 @app.route('/file/v2', methods=['GET'])
 def get_file_by_fileName_v2():
-    dir = os.path.join('/workspace', 'ComfyUI', 'output')
+    dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
     specific_filename = request.args.get('filename')
 
     if specific_filename:
