@@ -8,6 +8,7 @@ import os
 from PIL import Image
 import glob
 import requests
+import mimetypes
 
 app = Flask(__name__)
 CORS(app)
@@ -70,7 +71,10 @@ def get_file_by_fileName_v2():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             with open(file_paths[0], 'rb') as f:
-                files = {'file': f}
+                mime_type = mimetypes.guess_type(file_paths[0])[0]
+                print(mime_type)
+                files = {'file': ('filename', f, mime_type)}
+                print(files)
                 response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
                 print(response.json())
                 if response.status_code == 200:
