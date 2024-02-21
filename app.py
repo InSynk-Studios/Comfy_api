@@ -74,7 +74,7 @@ def get_file_by_fileName_v2():
                 response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
                 print(response.json())
                 if response.status_code == 200:
-                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response.json().fileName}"
+                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response.json()['fileName']}"
                     return {
                         "downloadURL": downloadURL
                     }
