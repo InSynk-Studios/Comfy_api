@@ -9,3 +9,4 @@ flask_cors
 imageio
 pillow-avif-plugin
 pillow-heif
+websocket-client
