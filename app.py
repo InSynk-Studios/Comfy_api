@@ -70,7 +70,7 @@ def get_file_by_fileName_v2():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             with open(file_paths[0], 'rb') as f:
-                files = {'file': (f.name, f, 'multipart/form-data')}
+                files = {'file': f}
                 response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
                 print(response.json())
                 if response.status_code == 200:
