@@ -78,14 +78,19 @@ def get_file_by_fileName_v2():
                 print(mime_type)
                 files = {'file': (specific_filename, f, mime_type)}
                 print(files)
-                response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
-                print(response.json())
-                if response.status_code == 200:
-                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response.json()['fileName']}"
-                    print(downloadURL)
-                    return {
-                        "downloadURL": downloadURL
-                    }
+                try:
+                    response = requests.post('https://hom-agents-staging.vercel.app/api/s3-upload', files=files)
+                    response.raise_for_status() 
+
+                    response_data = response.json()
+                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response_data['fileName']}"
+                    return {"downloadURL": downloadURL}
+                except requests.RequestException as e:
+                    print(f"Request failed: {e}")
+                    return "Failed to upload file.", 500
+                except ValueError as e:  # Includes JSONDecodeError
+                    print(f"Failed to parse response as JSON: {e}")
+                    return "Invalid response received.", 500
         else:
             return "File not found.", 204
     else:
