@@ -10,3 +10,4 @@ imageio
 pillow-avif-plugin
 pillow-heif
 websocket-client
+bs4

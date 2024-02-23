@@ -10,10 +10,12 @@ import glob
 import requests
 import mimetypes
 from v2.routes.app import app as app_v2
+from routes.scrape import scrape
 
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(app_v2)
+app.register_blueprint(scrape)
 register_heif_opener()
 
 @app.route('/', methods=['GET'])

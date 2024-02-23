@@ -12,6 +12,7 @@ def run_command(command):
 
 # Step 1: Create a virtual environment
 venv_name = "venv"  # Name of the virtual environment
+run_command(f"bash post_start.sh")
 run_command(f"python -m venv {venv_name}")
 
 # Step 2: Install dependencies from requirements.txt
