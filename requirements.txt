@@ -11,3 +11,5 @@ pillow-avif-plugin
 pillow-heif
 websocket-client
 bs4
+boto3
+python-dotenv

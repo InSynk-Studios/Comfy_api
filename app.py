@@ -11,6 +11,16 @@ import requests
 import mimetypes
 from v2.routes.app import app as app_v2
 from routes.scrape import scrape
+from dotenv import load_dotenv
+import boto3
+
+load_dotenv()
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv('AWS_S3_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_S3_SECRET_ACCESS_KEY'),
+    region_name=os.getenv('AWS_S3_REGION')
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -74,25 +84,10 @@ def get_file_by_fileName_v2():
     if specific_filename:
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
-            with open(file_paths[0], 'rb') as f:
-                print(file_paths[0])
-                mime_type = mimetypes.guess_type(file_paths[0])[0]
-                print(mime_type)
-                files = {'file': (specific_filename, f, mime_type)}
-                print(files)
-                try:
-                    response = requests.post('https://hom-agents-lobeui-staging.vercel.app/api/s3-upload', files=files)
-                    response.raise_for_status() 
-
-                    response_data = response.json()
-                    downloadURL = f"https://adgen-media.s3.ap-south-1.amazonaws.com/{response_data['fileName']}"
-                    return {"downloadURL": downloadURL}
-                except requests.RequestException as e:
-                    print(f"Request failed: {e}")
-                    return "Failed to upload file.", 500
-                except ValueError as e:  # Includes JSONDecodeError
-                    print(f"Failed to parse response as JSON: {e}")
-                    return "Invalid response received.", 500
+            s3_file_name = os.path.basename(file_paths[0])
+            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name)
+            downloadURL = f"https://{os.getenv('AWS_S3_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION')}.amazonaws.com/{s3_file_name}"   
+            return {"downloadURL": downloadURL}, 200
         else:
             return "File not found.", 204
     else:
