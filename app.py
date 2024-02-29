@@ -147,6 +147,7 @@ def upload_image():
         image = Image.open(file)
 
         file_extension = os.path.splitext(filename)[1]
+        print(file_extension)
 
         if file_extension.lower() == '.png':
             image.save(save_path, format='PNG')
