@@ -154,9 +154,9 @@ def upload_image():
         else:
             rgb_im = image.convert('RGB')
             # Save the image in the desired format
-            new_filename = os.path.splitext(filename)[0] + '.jpg'
+            new_filename = os.path.splitext(filename)[0] + '.png'
             save_path = os.path.join('../ComfyUI/input', new_filename)
-            rgb_im.save(save_path, format='JPEG')
+            rgb_im.save(save_path, format='PNG')
             
         # file.save(save_path)
         return jsonify({"success": "Image successfully uploaded and saved"}), 200
