@@ -145,13 +145,18 @@ def upload_image():
         filename = secure_filename(file.filename)
         save_path = os.path.join('../ComfyUI/input', filename)
         image = Image.open(file)
-        # Convert the image to JPEG (or another format)
-        rgb_im = image.convert('RGB')
-        # Save the image in the desired format
-        new_filename = os.path.splitext(filename)[0] + '.jpg'
-        save_path = os.path.join('../ComfyUI/input', new_filename)
-        rgb_im.save(save_path, format='JPEG')
-        
+
+        file_extension = os.path.splitext(filename)[1]
+
+        if file_extension.lower() == '.png':
+            image.save(save_path, format='PNG')
+        else:
+            rgb_im = image.convert('RGB')
+            # Save the image in the desired format
+            new_filename = os.path.splitext(filename)[0] + '.jpg'
+            save_path = os.path.join('../ComfyUI/input', new_filename)
+            rgb_im.save(save_path, format='JPEG')
+            
         # file.save(save_path)
         return jsonify({"success": "Image successfully uploaded and saved"}), 200
     else:
