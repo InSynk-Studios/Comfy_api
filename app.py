@@ -77,7 +77,7 @@ def get_file_by_fileName():
         return "File not found.", 204
 
 @app.route('/file-input', methods=['GET'])
-def get_file_by_fileName():
+def get_input_file_by_fileName():
     dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'input')
     specific_filename = request.args.get('filename')
 
