@@ -76,6 +76,20 @@ def get_file_by_fileName():
     else:
         return "File not found.", 204
 
+@app.route('/file-input', methods=['GET'])
+def get_file_by_fileName():
+    dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'input')
+    specific_filename = request.args.get('filename')
+
+    if specific_filename:
+        file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
+        if file_paths:
+            return send_file(file_paths[0], as_attachment=True)
+        else:
+            return "File not found.", 204
+    else:
+        return "File not found.", 204
+
 @app.route('/file/v2', methods=['GET'])
 def get_file_by_fileName_v2():
     dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
