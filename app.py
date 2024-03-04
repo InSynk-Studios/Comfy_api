@@ -59,6 +59,7 @@ def handle_heartbeat(message):
 
 def check_heartbeats():
     while True:
+        print('Checking heartbeats...')
         for sid, last_heartbeat in list(clients.items()):
             if time.time() - last_heartbeat > 20:
                 clients.pop(sid, None)
