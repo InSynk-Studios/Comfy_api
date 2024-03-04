@@ -1,3 +1,4 @@
+import time
 import zipfile
 from flask import Flask, send_file, request, jsonify
 from werkzeug.utils import secure_filename
@@ -30,24 +31,38 @@ app.register_blueprint(scrape)
 register_heif_opener()
 
 socketio = SocketIO(app, cors_allowed_origins="*")
+clients = {}
 
 @app.route('/', methods=['GET'])
 def hello():
     return "Hello, welcome to the server!"
 
 @socketio.on('connect')
-def test_connect():
+def connect():
+    clients[request.sid] = time.time()
     print('Client connected')
 
 @socketio.on('disconnect')
-def test_disconnect():
+def disconnect():
+    clients.pop(request.sid, None)
     print('Client disconnected')
 
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
+    clients[request.sid] = time.time()
     print('Heartbeat received: ', message)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
+def check_heartbeats():
+    while True:
+        for sid, last_heartbeat in list(clients.items()):
+            if time.time() - last_heartbeat > 60:
+                disconnect(sid)
+                clients.pop(sid, None)
+        socketio.sleep(10)
+
+socketio.start_background_task(check_heartbeats)
+    
 @app.route('/latest', methods=['GET'])
 def get_latest_files():
   image_dir = '../ComfyUI/output/'
