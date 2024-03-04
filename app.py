@@ -70,6 +70,7 @@ def check_heartbeats():
                 running_executions = queue_data['queue_running']                
                 pending_executions = queue_data['queue_pending']                
                 execution_ids = generations[sid] 
+                print(f"Execution IDs: {execution_ids}")
                 
                 for id in execution_ids:
                     for exec in pending_executions:
