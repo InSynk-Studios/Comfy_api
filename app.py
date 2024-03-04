@@ -29,7 +29,7 @@ app.register_blueprint(app_v2)
 app.register_blueprint(scrape)
 register_heif_opener()
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/', methods=['GET'])
 def hello():
