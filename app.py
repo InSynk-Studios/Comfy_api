@@ -217,16 +217,11 @@ def get_queue():
 @app.route('/delete-queue-item', methods=['POST'])
 def delete_queue_item():
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
-    executionId = request.args.get('executionId')
+    incoming_data = request.json
     
-    if not executionId:
-        return jsonify({"error": "No executionId provided"}), 400
-
     external_api_url = f"{external_api_url}/queue"
-    json = f'{{"delete":["{executionId}"]}}'
-
     try:
-        response = requests.post(external_api_url, json=json)
+        response = requests.post(external_api_url, json=incoming_data)
 
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
