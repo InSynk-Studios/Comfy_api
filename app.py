@@ -47,7 +47,25 @@ def connect():
 
 @socketio.on('disconnect')
 def disconnect():
-    # clients.pop(request.sid, None)
+    sid = request.sid
+    print(f"Client {sid} has been disconnected due to inactivity")
+    url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
+    response = requests.get(url)
+    queue_data = response.json()
+    running_executions = queue_data['queue_running']                
+    pending_executions = queue_data['queue_pending']                
+    execution_ids = generations[sid] 
+    print(f"Execution IDs: {execution_ids}")
+    
+    for id in execution_ids:
+        for exec in pending_executions:
+            if exec[1] == id:
+                requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
+        for exec in running_executions:
+            if exec[1] == id:
+                requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
+    
+    clients.pop(sid, None)
     print('Client disconnected')
 
 @socketio.on('heartbeat')
@@ -58,9 +76,9 @@ def handle_heartbeat(message):
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
 def check_heartbeats():
+    print('Checking heartbeats...')
     while True:
         for sid, last_heartbeat in list(clients.items()):
-            print('Checking heartbeats...')
             if time.time() - last_heartbeat > 20:
                 # clients.pop(sid, None)
                 print(f"Client {sid} has been disconnected due to inactivity")
@@ -83,7 +101,7 @@ def check_heartbeats():
                 clients.pop(sid, None)
         socketio.sleep(10)
 
-socketio.start_background_task(check_heartbeats)
+# socketio.start_background_task(check_heartbeats)
     
 @app.route('/latest', methods=['GET'])
 def get_latest_files():
