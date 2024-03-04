@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
 
+DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
+
 load_dotenv()
 s3_client = boto3.client(
     's3',
@@ -32,6 +34,7 @@ register_heif_opener()
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 clients = {}
+generations = {}
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -51,14 +54,29 @@ def disconnect():
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
     print('Heartbeat received: ', message)
+    print('Clients: ', clients)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
 def check_heartbeats():
     while True:
         for sid, last_heartbeat in list(clients.items()):
             if time.time() - last_heartbeat > 60:
-                disconnect(sid)
                 clients.pop(sid, None)
+                url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
+                response = requests.get(url)
+                queue_data = response.json()
+                running_executions = queue_data['queue_running']                
+                pending_executions = queue_data['queue_pending']                
+                execution_ids = generations[sid] 
+                
+                for id in execution_ids:
+                    for exec in pending_executions:
+                        if exec[1] == id:
+                            requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
+                    for exec in running_executions:
+                        if exec[1] == id:
+                            requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
+                
         socketio.sleep(10)
 
 socketio.start_background_task(check_heartbeats)
@@ -206,10 +224,10 @@ def upload_image():
     else:
         return jsonify({"error": "Allowed image types are - png, jpg, jpeg, webp"}), 400
 
-DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    client_id = request.args.get('client')
 
     incoming_data = request.json
     print(incoming_data)
@@ -217,7 +235,11 @@ def call_external_api():
 
     try:
         response = requests.post(external_api_url, json=incoming_data)
+        if client_id not in generations:
+            generations[client_id] = []
 
+        generations[client_id].append(response.json().get('prompt_id'))
+            
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         print(e)
