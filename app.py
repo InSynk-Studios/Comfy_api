@@ -47,7 +47,7 @@ def connect():
 
 @socketio.on('disconnect')
 def disconnect():
-    clients.pop(request.sid, None)
+    # clients.pop(request.sid, None)
     print('Client disconnected')
 
 @socketio.on('heartbeat')
@@ -59,8 +59,8 @@ def handle_heartbeat(message):
 
 def check_heartbeats():
     while True:
-        print('Checking heartbeats...')
         for sid, last_heartbeat in list(clients.items()):
+            print('Checking heartbeats...')
             if time.time() - last_heartbeat > 20:
                 clients.pop(sid, None)
                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
@@ -78,6 +78,7 @@ def check_heartbeats():
                         if exec[1] == id:
                             requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
                 
+                clients.pop(sid, None)
         socketio.sleep(10)
 
 socketio.start_background_task(check_heartbeats)
