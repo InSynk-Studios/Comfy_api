@@ -62,7 +62,8 @@ def check_heartbeats():
         for sid, last_heartbeat in list(clients.items()):
             print('Checking heartbeats...')
             if time.time() - last_heartbeat > 20:
-                clients.pop(sid, None)
+                # clients.pop(sid, None)
+                print(f"Client {sid} has been disconnected due to inactivity")
                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
                 response = requests.get(url)
                 queue_data = response.json()
