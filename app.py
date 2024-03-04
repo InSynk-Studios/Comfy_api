@@ -183,7 +183,7 @@ def upload_image():
     else:
         return jsonify({"error": "Allowed image types are - png, jpg, jpeg, webp"}), 400
 
-DEFAULT_EXTERNAL_API_URL = 'https://zypr91htxji6wc-3000.proxy.runpod.net'
+DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
