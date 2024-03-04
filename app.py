@@ -227,7 +227,7 @@ def upload_image():
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
-    client_id = request.args.get('client')
+    client_id = request.args.get('clientId')
 
     incoming_data = request.json
     print(incoming_data)
@@ -248,7 +248,6 @@ def call_external_api():
 @app.route('/get-queue', methods=['GET'])
 def get_queue():
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
-
     external_api_url = f"{external_api_url}/queue"
 
     try:
