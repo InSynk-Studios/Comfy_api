@@ -223,9 +223,7 @@ def delete_queue_item():
         return jsonify({"error": "No executionId provided"}), 400
 
     external_api_url = f"{external_api_url}/queue"
-    json = f"""
-        {"delete":["{executionId}"]}
-    """
+    json = f'{{"delete":["{executionId}"]}}'
 
     try:
         response = requests.post(external_api_url, json=json)
