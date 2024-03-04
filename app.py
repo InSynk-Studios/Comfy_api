@@ -35,6 +35,14 @@ socketio = SocketIO(app)
 def hello():
     return "Hello, welcome to the server!"
 
+@socketio.on('connect')
+def test_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected')
+
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
     print('Heartbeat received: ', message)
