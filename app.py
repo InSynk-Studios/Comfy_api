@@ -13,6 +13,7 @@ from v2.routes.app import app as app_v2
 from routes.scrape import scrape
 from dotenv import load_dotenv
 import boto3
+from flask_socketio import SocketIO, emit
 
 load_dotenv()
 s3_client = boto3.client(
@@ -28,9 +29,16 @@ app.register_blueprint(app_v2)
 app.register_blueprint(scrape)
 register_heif_opener()
 
+socketio = SocketIO(app)
+
 @app.route('/', methods=['GET'])
 def hello():
     return "Hello, welcome to the server!"
+
+@socketio.on('heartbeat')
+def handle_heartbeat(message):
+    print('Heartbeat received: ', message)
+    emit('heartbeat_response', {'data': 'Heartbeat received'})
 
 @app.route('/latest', methods=['GET'])
 def get_latest_files():
@@ -191,6 +199,56 @@ def call_external_api():
     except requests.RequestException as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/get-queue', methods=['GET'])
+def get_queue():
+    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+
+    external_api_url = f"{external_api_url}/queue"
+
+    try:
+        response = requests.get(external_api_url)
+
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/delete-queue-item', methods=['POST'])
+def delete_queue_item():
+    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    executionId = request.args.get('executionId')
+    
+    if not executionId:
+        return jsonify({"error": "No executionId provided"}), 400
+
+    external_api_url = f"{external_api_url}/queue"
+    json = f"""
+        {"delete":["{executionId}"]}
+    """
+
+    try:
+        response = requests.post(external_api_url, json=json)
+
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+    
+# Stops currently running execution
+@app.route('/interrupt', methods=['POST'])
+def interrupt_execution():
+    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+
+    external_api_url = f"{external_api_url}/interrupt"
+
+    try:
+        response = requests.post(external_api_url)
+
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -198,4 +256,5 @@ def allowed_file(filename):
 
 
 if __name__ == '__main__':
+    socketio.run(app)
     app.run(host='0.0.0.0', port=5000, debug=False)

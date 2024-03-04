@@ -13,3 +13,4 @@ websocket-client
 bs4
 boto3
 python-dotenv
+flask-socketio
