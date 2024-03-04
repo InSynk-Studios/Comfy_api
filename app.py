@@ -60,7 +60,7 @@ def handle_heartbeat(message):
 def check_heartbeats():
     while True:
         for sid, last_heartbeat in list(clients.items()):
-            if time.time() - last_heartbeat > 60:
+            if time.time() - last_heartbeat > 20:
                 clients.pop(sid, None)
                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
                 response = requests.get(url)
