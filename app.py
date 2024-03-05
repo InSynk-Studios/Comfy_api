@@ -1,3 +1,4 @@
+import threading
 import time
 import zipfile
 from flask import Flask, send_file, request, jsonify
@@ -9,7 +10,6 @@ import os
 from PIL import Image
 import glob
 import requests
-import mimetypes
 from v2.routes.app import app as app_v2
 from routes.scrape import scrape
 from dotenv import load_dotenv
@@ -17,6 +17,7 @@ import boto3
 from flask_socketio import SocketIO, emit
 
 DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
+SELF_URL = "https://genai.houseofmodels.ai"
 
 load_dotenv()
 s3_client = boto3.client(
@@ -58,12 +59,9 @@ def disconnect():
     print(f"Execution IDs: {execution_ids}")
     
     for id in execution_ids:
-        for exec in pending_executions:
-            if exec[1] == id:
-                requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
-        for exec in running_executions:
-            if exec[1] == id:
-                requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
+        executions = {'pending': pending_executions, 'running': running_executions}
+        thread = threading.Thread(target=delete_and_interrupt, args=(executions, id))
+        thread.start()
     
     clients.pop(sid, None)
     print('Client disconnected')
@@ -75,34 +73,59 @@ def handle_heartbeat(message):
     print('Clients: ', clients)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
-def check_heartbeats():
-    print('Checking heartbeats...')
+def delete_and_interrupt(executions, id):
+    try:
+        for exec in executions['pending']:
+            if exec[1] == id:
+                response = requests.post(f"{SELF_URL}/delete-queue-item", json={"delete": [id]})
+                response.raise_for_status()
+        for exec in executions['running']:
+            if exec[1] == id:
+                response = requests.post(f"${SELF_URL}/interrupt", json={"execution_id": exec[0]})
+                response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print(f'Deleted/Interrupted: {id}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+# def check_heartbeats():
+#     print('Checking heartbeats...')
+#     while True:
+#         for sid, last_heartbeat in list(clients.items()):
+#             if time.time() - last_heartbeat > 20:
+#                 # clients.pop(sid, None)
+#                 print(f"Client {sid} has been disconnected due to inactivity")
+#                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
+#                 response = requests.get(url)
+#                 queue_data = response.json()
+#                 running_executions = queue_data['queue_running']                
+#                 pending_executions = queue_data['queue_pending']                
+#                 execution_ids = generations[sid] 
+#                 print(f"Execution IDs: {execution_ids}")
+                
+#                 for id in execution_ids:
+#                     for exec in pending_executions:
+#                         if exec[1] == id:
+#                             requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
+#                     for exec in running_executions:
+#                         if exec[1] == id:
+#                             requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
+                
+#                 clients.pop(sid, None)
+#         socketio.sleep(10)
+
+def emit_queue_length():
     while True:
-        for sid, last_heartbeat in list(clients.items()):
-            if time.time() - last_heartbeat > 20:
-                # clients.pop(sid, None)
-                print(f"Client {sid} has been disconnected due to inactivity")
-                url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
-                response = requests.get(url)
-                queue_data = response.json()
-                running_executions = queue_data['queue_running']                
-                pending_executions = queue_data['queue_pending']                
-                execution_ids = generations[sid] 
-                print(f"Execution IDs: {execution_ids}")
-                
-                for id in execution_ids:
-                    for exec in pending_executions:
-                        if exec[1] == id:
-                            requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
-                    for exec in running_executions:
-                        if exec[1] == id:
-                            requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
-                
-                clients.pop(sid, None)
+        url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
+        response = requests.get(url)
+        queue_data = response.json()
+        running_executions = queue_data['queue_running']                
+        pending_executions = queue_data['queue_pending']                
+        socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
         socketio.sleep(10)
 
-# socketio.start_background_task(check_heartbeats)
-    
+socketio.start_background_task(emit_queue_length)
+
 @app.route('/latest', methods=['GET'])
 def get_latest_files():
   image_dir = '../ComfyUI/output/'
