@@ -115,8 +115,8 @@ def delete_and_interrupt(executions, id):
 #         socketio.sleep(10)
 
 def emit_queue_length():
-    print('Emitting queue length...')
     while True:
+        print('Emitting queue length...')
         url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
         response = requests.get(url)
         queue_data = response.json()
