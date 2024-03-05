@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
 
-DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
-SELF_URL = "https://genai.houseofmodels.ai"
+DEFAULT_EXTERNAL_API_URL = 'http://4.227.147.49:8188'
+SELF_URL = "http://4.227.147.49:5000"
 
 load_dotenv()
 s3_client = boto3.client(
