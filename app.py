@@ -122,7 +122,7 @@ def emit_queue_length():
         running_executions = queue_data['queue_running']                
         pending_executions = queue_data['queue_pending']                
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
-        socketio.sleep(10)
+        socketio.sleep(5)
 
 socketio.start_background_task(emit_queue_length)
 
