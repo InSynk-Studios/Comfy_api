@@ -11,7 +11,8 @@ load_dotenv()
 
 bcrypt = Bcrypt()
 password = os.getenv('MONGO_PASSWORD')
-client = MongoClient(f"mongodb://hom:{password}@cluster0.lq59o75.mongodb.net?retryWrites=true&w=majority")
+client = MongoClient(f"mongodb+srv://hom:{password}@cluster0.lq59o75.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+
 db = client['hom'] 
 accounts = db['accounts']
 

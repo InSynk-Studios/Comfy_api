@@ -17,3 +17,4 @@ flask-socketio
 flask-bcrypt
 pymongo
 PyJWT
+pymongo[srv]
