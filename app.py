@@ -18,8 +18,8 @@ import boto3
 from flask_socketio import SocketIO, emit
 import jwt
 
-DEFAULT_EXTERNAL_API_URL = 'http://4.227.147.49:8188'
-SELF_URL = "http://4.227.147.49:5000"
+DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
+SELF_URL = os.getenv('SELF_URL')
 
 load_dotenv()
 s3_client = boto3.client(
