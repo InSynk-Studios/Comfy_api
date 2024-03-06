@@ -11,12 +11,13 @@ load_dotenv()
 
 bcrypt = Bcrypt()
 password = os.getenv('MONGO_PASSWORD')
-client = MongoClient(f'mongodb+srv://hom:{password}@cluster0.lq59o75.mongodb.net?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE')
+client = MongoClient(f"mongodb+srv://hom:{password}@cluster0.lq59o75.mongodb.net/test?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE")
 db = client['hom'] 
 accounts = db['accounts']
 
 @auth.route('/api/auth/create', methods=['POST'])
 def createUser():
+  print(accounts)
   email = request.json.get('email')
   password = request.json.get('password')
 
