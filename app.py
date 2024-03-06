@@ -16,6 +16,7 @@ from routes.auth import auth
 from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
+import jwt
 
 DEFAULT_EXTERNAL_API_URL = 'http://4.227.147.49:8188'
 SELF_URL = "http://4.227.147.49:5000"
@@ -46,7 +47,7 @@ def hello():
 @socketio.on('connect')
 def connect():
     clients[request.sid] = time.time()
-    print('Client connected')
+    print('Client connected: ', request.sid)
 
 @socketio.on('disconnect')
 def disconnect():
@@ -58,7 +59,6 @@ def disconnect():
     running_executions = queue_data['queue_running']                
     pending_executions = queue_data['queue_pending']                
     execution_ids = generations[sid] 
-    print(f"Execution IDs: {execution_ids}")
     
     for id in execution_ids:
         executions = {'pending': pending_executions, 'running': running_executions}
@@ -66,7 +66,7 @@ def disconnect():
         thread.start()
     
     clients.pop(sid, None)
-    print('Client disconnected')
+    print('Client disconnected: ', sid)
 
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
@@ -118,7 +118,6 @@ def delete_and_interrupt(executions, id):
 
 def emit_queue_length():
     while True:
-        print('Emitting queue length...')
         url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
         response = requests.get(url)
         queue_data = response.json()
@@ -274,11 +273,21 @@ def upload_image():
 
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
+    # token = request.headers.get('Authorization')
+    # if not token:
+    #     return jsonify({"error": "Unauthorized"}), 401
+    
+    # try:
+    #     data = jwt.decode(token, 'secret-key', algorithms=['HS256'])
+    # except jwt.ExpiredSignatureError:
+    #     return jsonify({"error": "Token is expired"}), 401
+    # except jwt.InvalidTokenError:
+    #     return jsonify({"error": "Token is invalid"}), 401
+
     external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
     client_id = request.args.get('clientId')
 
     incoming_data = request.json
-    print(incoming_data)
     external_api_url = f"{external_api_url}/prompt"
 
     try:
