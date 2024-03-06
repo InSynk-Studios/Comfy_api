@@ -55,7 +55,6 @@ def login():
     return jsonify({"error": "Email and password required"}), 400
 
   user = accounts.find_one({'email': email})
-  print(user)
 
   if not user:
     return jsonify({"error": "Invalid email or password"}), 401
