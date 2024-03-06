@@ -5,7 +5,6 @@ from pymongo.mongo_client import MongoClient
 import jwt
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from pymongo.server_api import ServerApi
 
 auth = Blueprint('auth', __name__)
 load_dotenv()
@@ -13,7 +12,8 @@ load_dotenv()
 bcrypt = Bcrypt()
 password = os.getenv('MONGO_PASSWORD')
 uri = f"mongodb+srv://hom:{password}@cluster0.lq59o75.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(uri, server_api=ServerApi('1'))
+print(uri)
+client = MongoClient(uri)
 
 try:
     client.admin.command('ping')
