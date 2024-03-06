@@ -284,7 +284,7 @@ def call_external_api():
     # except jwt.InvalidTokenError:
     #     return jsonify({"error": "Token is invalid"}), 401
 
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     client_id = request.args.get('clientId')
 
     incoming_data = request.json
@@ -304,7 +304,7 @@ def call_external_api():
     
 @app.route('/get-queue', methods=['GET'])
 def get_queue():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     external_api_url = f"{external_api_url}/queue"
 
     try:
@@ -317,7 +317,7 @@ def get_queue():
     
 @app.route('/delete-queue-item', methods=['POST'])
 def delete_queue_item():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     incoming_data = request.json
     
     external_api_url = f"{external_api_url}/queue"
@@ -332,7 +332,7 @@ def delete_queue_item():
 # Stops currently running execution
 @app.route('/interrupt', methods=['POST'])
 def interrupt_execution():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
 
     external_api_url = f"{external_api_url}/interrupt"
 
