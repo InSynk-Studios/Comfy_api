@@ -55,18 +55,19 @@ def login():
     return jsonify({"error": "Email and password required"}), 400
 
   user = accounts.find_one({'email': email})
+  print(user)
 
   if not user:
     return jsonify({"error": "Invalid email or password"}), 401
 
   if bcrypt.check_password_hash(user['password'], password):
     payload = {
-            'exp': datetime.utcnow() + timedelta(days=1),
-            'iat': datetime.utcnow(),
-            'sub': user['_id']
-        }
+      'exp': datetime.utcnow() + timedelta(days=1),
+      'iat': datetime.utcnow(),
+      'sub': str(user['_id']) 
+    }
     token = jwt.encode(payload, 'secretkey', algorithm='HS256')
 
-    return jsonify({"token": token.decode('UTF-8')}), 200
+    return jsonify({"token": token}), 200
   else:
     return jsonify({"error": "Invalid email or password"}), 401

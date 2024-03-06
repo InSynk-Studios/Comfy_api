@@ -71,7 +71,7 @@ def disconnect():
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
-    print('Heartbeat received: ', message)
+    # print('Heartbeat received: ', message)
     print('Clients: ', clients)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
