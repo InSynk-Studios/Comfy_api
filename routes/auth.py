@@ -1,10 +1,11 @@
 import os
 from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
 import jwt
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from pymongo.server_api import ServerApi
 
 auth = Blueprint('auth', __name__)
 load_dotenv()
@@ -12,21 +13,18 @@ load_dotenv()
 bcrypt = Bcrypt()
 password = os.getenv('MONGO_PASSWORD')
 uri = f"mongodb+srv://hom:{password}@cluster0.lq59o75.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-print(uri)
-client = MongoClient(uri)
+client = MongoClient(uri, server_api=ServerApi('1'))
 
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     print(e)
-
 db = client['hom'] 
 accounts = db['accounts']
 
 @auth.route('/api/auth/create', methods=['POST'])
 def createUser():
-  print(accounts)
   email = request.json.get('email')
   password = request.json.get('password')
 
