@@ -72,7 +72,7 @@ def disconnect():
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
     # print('Heartbeat received: ', message)
-    print('Clients: ', clients)
+    # print('Clients: ', clients)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
 
 def delete_and_interrupt(executions, id):
@@ -278,7 +278,7 @@ def call_external_api():
     #     return jsonify({"error": "Unauthorized"}), 401
     
     # try:
-    #     data = jwt.decode(token, 'secret-key', algorithms=['HS256'])
+    #     data = jwt.decode(token, 'secretkey', algorithms=['HS256'])
     # except jwt.ExpiredSignatureError:
     #     return jsonify({"error": "Token is expired"}), 401
     # except jwt.InvalidTokenError:
