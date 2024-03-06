@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
-from pymongo.mongo_client import MongoClient
+from pymongo import MongoClient
 import jwt
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
