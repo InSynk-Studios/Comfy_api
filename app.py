@@ -118,13 +118,14 @@ def delete_and_interrupt(executions, id):
 
 def emit_queue_length():
     while True:
+        print('Emitting queue length...')
         url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
         response = requests.get(url)
         queue_data = response.json()
         running_executions = queue_data['queue_running']                
         pending_executions = queue_data['queue_pending']                
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
-        socketio.sleep(5)
+        socketio.sleep(3)
 
 socketio.start_background_task(emit_queue_length)
 
