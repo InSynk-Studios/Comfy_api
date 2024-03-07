@@ -290,9 +290,12 @@ def call_external_api():
 
     incoming_data = request.json
     external_api_url = f"{external_api_url}/prompt"
+    print(incoming_data)
+    print(external_api_url)
 
     try:
         response = requests.post(external_api_url, json=incoming_data)
+        print(response.json())
         if client_id not in generations:
             generations[client_id] = []
 
