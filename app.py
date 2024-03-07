@@ -274,16 +274,16 @@ def upload_image():
 
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
-    # token = request.headers.get('Authorization')
-    # if not token:
-    #     return jsonify({"error": "Unauthorized"}), 401
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
     
-    # try:
-    #     data = jwt.decode(token, 'secretkey', algorithms=['HS256'])
-    # except jwt.ExpiredSignatureError:
-    #     return jsonify({"error": "Token is expired"}), 401
-    # except jwt.InvalidTokenError:
-    #     return jsonify({"error": "Token is invalid"}), 401
+    try:
+        data = jwt.decode(token, 'secretkey', algorithms=['HS256'])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token is expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Token is invalid"}), 401
 
     external_api_url = DEFAULT_EXTERNAL_API_URL
     client_id = request.args.get('clientId')
