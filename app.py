@@ -84,15 +84,17 @@ def check_for_generations():
         print("Generations: ", generations)
         ws = websocket.WebSocket()
         ws_url = f"ws://4.227.147.49:8188/ws?clientId=FtohdEIn6L9yu3oVAAAN"
-        print(ws_url)
         ws.connect(ws_url)
         for generation in generations:
             out = ws.recv()
-            print(out)
             if isinstance(out, str):
                 message = json.loads(out)
                 if message['type'] == 'executing':
                     data = message['data']
+                    print("=======================")
+                    print(data)
+                    print(generation)
+                    print("=======================")
                     if data['node'] is None and data['prompt_id'] == generation:
                         emit('generations', {'data': generation})
                         generations.pop(generation, None)
