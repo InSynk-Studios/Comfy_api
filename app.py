@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
 import jwt
+import requests
 
 DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
 SELF_URL = os.getenv('SELF_URL')
@@ -40,7 +41,7 @@ register_heif_opener()
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 clients = {}
-generations = {}
+generations = []
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -80,13 +81,14 @@ def check_for_generations():
         if not clients:
             socketio.sleep(5)
             continue
-        print(generations)
+        print("Generations: ", generations)
         ws = websocket.WebSocket()
-        ws_url = f"ws://4.4.227.147.49:8188/ws?clientId={clients[0]}"
+        ws_url = f"ws://4.4.227.147.49:8188/ws?clientId=FtohdEIn6L9yu3oVAAAN"
         print(ws_url)
         ws.connect(ws_url)
         for generation in generations:
             out = ws.recv()
+            print(out)
             if isinstance(out, str):
                 message = json.loads(out)
                 if message['type'] == 'executing':
