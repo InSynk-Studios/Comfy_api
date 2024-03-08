@@ -80,6 +80,8 @@ def check_for_generations():
         ws = websocket.WebSocket()
         ws.connect("ws://4.227.147.49:8188/ws")
         for client in clients:
+            if not generations[client]:
+                continue
             print('Checking for generations...')
             print(generations)
             for generation in generations[client]:
