@@ -19,7 +19,6 @@ from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
 import jwt
-import requests
 
 DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
 SELF_URL = os.getenv('SELF_URL')
@@ -41,7 +40,7 @@ register_heif_opener()
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 clients = {}
-generations = []
+generations = {}
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -78,26 +77,22 @@ def handle_heartbeat(message):
 
 def check_for_generations():
     while True:
-        if not clients:
-            socketio.sleep(5)
-            continue
-        print("Generations: ", generations)
         ws = websocket.WebSocket()
-        ws_url = f"ws://4.227.147.49:8188/ws?clientId=FtohdEIn6L9yu3oVAAAN"
-        ws.connect(ws_url)
-        for generation in generations:
-            out = ws.recv()
-            if isinstance(out, str):
-                message = json.loads(out)
-                if message['type'] == 'executing':
-                    data = message['data']
-                    print("=======================")
-                    print(data)
-                    print(generation)
-                    print("=======================")
-                    if data['node'] is None and data['prompt_id'] == generation:
-                        emit('generations', {'data': generation})
-                        generations.pop(generation, None)
+        ws.connect("ws://4.227.147.49:8188/ws")
+        for client in clients:
+            for generation in generations[client]:
+                out = ws.recv()
+                if isinstance(out, str):
+                    message = json.loads(out)
+                    if message['type'] == 'executing':
+                        data = message['data']
+                        print("================")
+                        print(data)
+                        print(generation)
+                        print("================")
+                        if data['node'] is None and data['prompt_id'] == generation:
+                            emit('generations', {'data': generation})
+                            generations.pop(generation, None)
         socketio.sleep(5)
 
 def delete_and_interrupt(executions, id):
@@ -125,7 +120,7 @@ def emit_queue_length():
         pending_executions = queue_data['queue_pending']                
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
         socketio.sleep(3)
-
+        
 socketio.start_background_task(check_for_generations)
 socketio.start_background_task(emit_queue_length)
 
@@ -296,8 +291,10 @@ def call_external_api():
     try:
         response = requests.post(external_api_url, json=incoming_data)
         print(response.json())
+        if client_id not in generations:
+            generations[client_id] = []
 
-        generations.append(response.json().get('prompt_id'))
+        generations[client_id].append(response.json().get('prompt_id'))
             
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
