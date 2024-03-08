@@ -1,7 +1,9 @@
+import json
 import threading
 import time
 import zipfile
 from flask import Flask, send_file, request, jsonify
+import websocket
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from pillow_heif import register_heif_opener
@@ -71,9 +73,23 @@ def disconnect():
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
-    # print('Heartbeat received: ', message)
-    # print('Clients: ', clients)
     emit('heartbeat_response', {'data': 'Heartbeat received'})
+
+def check_for_generations():
+    while True:
+        print(generations)
+        ws = websocket.WebSocket()
+        ws.connect("ws://{}/ws".format(DEFAULT_EXTERNAL_API_URL))
+        for generation in generations:
+            out = ws.recv()
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message['type'] == 'executing':
+                    data = message['data']
+                    if data['node'] is None and data['prompt_id'] == generation:
+                        emit('generations', {'data': generation})
+                        generations.pop(generation, None)
+        socketio.sleep(5)
 
 def delete_and_interrupt(executions, id):
     try:
@@ -90,32 +106,6 @@ def delete_and_interrupt(executions, id):
     except Exception as err:
         print(f'Other error occurred: {err}')
 
-# def check_heartbeats():
-#     print('Checking heartbeats...')
-#     while True:
-#         for sid, last_heartbeat in list(clients.items()):
-#             if time.time() - last_heartbeat > 20:
-#                 # clients.pop(sid, None)
-#                 print(f"Client {sid} has been disconnected due to inactivity")
-#                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
-#                 response = requests.get(url)
-#                 queue_data = response.json()
-#                 running_executions = queue_data['queue_running']                
-#                 pending_executions = queue_data['queue_pending']                
-#                 execution_ids = generations[sid] 
-#                 print(f"Execution IDs: {execution_ids}")
-                
-#                 for id in execution_ids:
-#                     for exec in pending_executions:
-#                         if exec[1] == id:
-#                             requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
-#                     for exec in running_executions:
-#                         if exec[1] == id:
-#                             requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
-                
-#                 clients.pop(sid, None)
-#         socketio.sleep(10)
-
 def emit_queue_length():
     while True:
         print('Emitting queue length...')
@@ -127,6 +117,7 @@ def emit_queue_length():
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
         socketio.sleep(3)
 
+socketio.start_background_task(check_for_generations)
 socketio.start_background_task(emit_queue_length)
 
 @app.route('/latest', methods=['GET'])
@@ -299,7 +290,7 @@ def call_external_api():
         if client_id not in generations:
             generations[client_id] = []
 
-        generations[client_id].append(response.json().get('prompt_id'))
+        generations.append(response.json().get('prompt_id'))
             
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
