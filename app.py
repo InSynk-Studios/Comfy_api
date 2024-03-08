@@ -82,6 +82,8 @@ def check_for_generations():
         for client in clients:
             for generation in generations[client]:
                 out = ws.recv()
+                print(out)
+                print(isinstance(out, str))
                 if isinstance(out, str):
                     message = json.loads(out)
                     print(message)
