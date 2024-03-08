@@ -83,7 +83,7 @@ def check_for_generations():
             continue
         print("Generations: ", generations)
         ws = websocket.WebSocket()
-        ws_url = f"ws://4.4.227.147.49:8188/ws?clientId=FtohdEIn6L9yu3oVAAAN"
+        ws_url = f"ws://4.227.147.49:8188/ws?clientId=FtohdEIn6L9yu3oVAAAN"
         print(ws_url)
         ws.connect(ws_url)
         for generation in generations:
