@@ -79,7 +79,9 @@ def check_for_generations():
     while True:
         print(generations)
         ws = websocket.WebSocket()
-        ws.connect("ws://{}/ws".format(DEFAULT_EXTERNAL_API_URL))
+        ws_url = f"ws://{DEFAULT_EXTERNAL_API_URL}/ws"
+        print(ws_url)
+        ws.connect(ws_url)
         for generation in generations:
             out = ws.recv()
             if isinstance(out, str):
