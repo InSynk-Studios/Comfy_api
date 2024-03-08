@@ -84,6 +84,7 @@ def check_for_generations():
                 out = ws.recv()
                 if isinstance(out, str):
                     message = json.loads(out)
+                    print(message)
                     if message['type'] == 'executing':
                         data = message['data']
                         print("================")
