@@ -61,7 +61,7 @@ def login():
 
   if bcrypt.check_password_hash(user['password'], password):
     payload = {
-      'exp': datetime.utcnow() + timedelta(days=1),
+      'exp': datetime.utcnow() + timedelta(days=365),
       'iat': datetime.utcnow(),
       'sub': str(user['_id']) 
     }

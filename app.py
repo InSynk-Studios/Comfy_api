@@ -73,9 +73,9 @@ def disconnect():
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
-    emit('heartbeat_response', {'data': 'Heartbeat received'})
-
-def check_for_generations():
+    emit('heartbeat_response', {'data': 'Heartbeat received'})          
+            
+def check_for_generations_ws():
     while True:
         ws = websocket.WebSocket()
         ws.connect("ws://4.227.147.49:8188/ws")
@@ -128,7 +128,7 @@ def emit_queue_length():
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
         socketio.sleep(3)
         
-socketio.start_background_task(check_for_generations)
+# socketio.start_background_task(check_for_generations)
 socketio.start_background_task(emit_queue_length)
 
 @app.route('/latest', methods=['GET'])
