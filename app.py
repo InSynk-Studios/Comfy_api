@@ -77,9 +77,12 @@ def handle_heartbeat(message):
 
 def check_for_generations():
     while True:
+        if not clients:
+            socketio.sleep(5)
+            continue
         print(generations)
         ws = websocket.WebSocket()
-        ws_url = f"ws://{DEFAULT_EXTERNAL_API_URL}/ws?clientId={clients[0]}"
+        ws_url = f"ws://4.4.227.147.49:8188/ws?clientId={clients[0]}"
         print(ws_url)
         ws.connect(ws_url)
         for generation in generations:
