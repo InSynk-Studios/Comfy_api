@@ -119,6 +119,9 @@ def delete_and_interrupt(executions, id):
 
 def emit_queue_length():
     while True:
+        if not clients:
+            socketio.sleep(5)
+            continue
         print('Emitting queue length...')
         url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
         response = requests.get(url)
