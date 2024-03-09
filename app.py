@@ -1,7 +1,9 @@
+import json
 import threading
 import time
 import zipfile
 from flask import Flask, send_file, request, jsonify
+import websocket
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from pillow_heif import register_heif_opener
@@ -16,9 +18,10 @@ from routes.auth import auth
 from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
+import jwt
 
-DEFAULT_EXTERNAL_API_URL = 'http://172.188.64.75:8188'
-SELF_URL = "https://genai.houseofmodels.ai"
+DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
+SELF_URL = os.getenv('SELF_URL')
 
 load_dotenv()
 s3_client = boto3.client(
@@ -46,7 +49,7 @@ def hello():
 @socketio.on('connect')
 def connect():
     clients[request.sid] = time.time()
-    print('Client connected')
+    print('Client connected: ', request.sid)
 
 @socketio.on('disconnect')
 def disconnect():
@@ -58,7 +61,6 @@ def disconnect():
     running_executions = queue_data['queue_running']                
     pending_executions = queue_data['queue_pending']                
     execution_ids = generations[sid] 
-    print(f"Execution IDs: {execution_ids}")
     
     for id in execution_ids:
         executions = {'pending': pending_executions, 'running': running_executions}
@@ -66,14 +68,39 @@ def disconnect():
         thread.start()
     
     clients.pop(sid, None)
-    print('Client disconnected')
+    print('Client disconnected: ', sid)
 
 @socketio.on('heartbeat')
 def handle_heartbeat(message):
     clients[request.sid] = time.time()
-    print('Heartbeat received: ', message)
-    print('Clients: ', clients)
-    emit('heartbeat_response', {'data': 'Heartbeat received'})
+    emit('heartbeat_response', {'data': 'Heartbeat received'})          
+            
+def check_for_generations_ws():
+    while True:
+        ws = websocket.WebSocket()
+        ws.connect("ws://4.227.147.49:8188/ws")
+        for client in clients:
+            if client not in generations or not generations[client]:
+                continue
+            print('Checking for generations...')
+            print(generations)
+            for generation in generations[client]:
+                out = ws.recv()
+                print(out)
+                print(isinstance(out, str))
+                if isinstance(out, str):
+                    message = json.loads(out)
+                    print(message)
+                    if message['type'] == 'executing':
+                        data = message['data']
+                        print("================")
+                        print(data)
+                        print(generation)
+                        print("================")
+                        if data['node'] is None and data['prompt_id'] == generation:
+                            emit('generations', {'data': generation})
+                            generations.pop(generation, None)
+        socketio.sleep(5)
 
 def delete_and_interrupt(executions, id):
     try:
@@ -90,32 +117,6 @@ def delete_and_interrupt(executions, id):
     except Exception as err:
         print(f'Other error occurred: {err}')
 
-# def check_heartbeats():
-#     print('Checking heartbeats...')
-#     while True:
-#         for sid, last_heartbeat in list(clients.items()):
-#             if time.time() - last_heartbeat > 20:
-#                 # clients.pop(sid, None)
-#                 print(f"Client {sid} has been disconnected due to inactivity")
-#                 url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
-#                 response = requests.get(url)
-#                 queue_data = response.json()
-#                 running_executions = queue_data['queue_running']                
-#                 pending_executions = queue_data['queue_pending']                
-#                 execution_ids = generations[sid] 
-#                 print(f"Execution IDs: {execution_ids}")
-                
-#                 for id in execution_ids:
-#                     for exec in pending_executions:
-#                         if exec[1] == id:
-#                             requests.post(f"https://genai.houseofmodels.ai/delete-queue-item", json={"delete": [id]})
-#                     for exec in running_executions:
-#                         if exec[1] == id:
-#                             requests.post(f"https://genai.houseofmodels.ai/interrupt", json={"execution_id": exec[0]})
-                
-#                 clients.pop(sid, None)
-#         socketio.sleep(10)
-
 def emit_queue_length():
     while True:
         print('Emitting queue length...')
@@ -125,8 +126,9 @@ def emit_queue_length():
         running_executions = queue_data['queue_running']                
         pending_executions = queue_data['queue_pending']                
         socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
-        socketio.sleep(5)
-
+        socketio.sleep(3)
+        
+# socketio.start_background_task(check_for_generations)
 socketio.start_background_task(emit_queue_length)
 
 @app.route('/latest', methods=['GET'])
@@ -196,7 +198,7 @@ def get_file_by_fileName_v2():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             s3_file_name = os.path.basename(file_paths[0])
-            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name)
+            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'ContentDisposition': 'attachment'})
             downloadURL = f"https://{os.getenv('AWS_S3_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION')}.amazonaws.com/{s3_file_name}"   
             return {"downloadURL": downloadURL}, 200
         else:
@@ -274,15 +276,28 @@ def upload_image():
 
 @app.route('/prompt', methods=['POST'])
 def call_external_api():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        data = jwt.decode(token, 'secretkey', algorithms=['HS256'])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token is expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Token is invalid"}), 401
+
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     client_id = request.args.get('clientId')
 
     incoming_data = request.json
-    print(incoming_data)
     external_api_url = f"{external_api_url}/prompt"
+    print(incoming_data)
+    print(external_api_url)
 
     try:
         response = requests.post(external_api_url, json=incoming_data)
+        print(response.json())
         if client_id not in generations:
             generations[client_id] = []
 
@@ -295,7 +310,7 @@ def call_external_api():
     
 @app.route('/get-queue', methods=['GET'])
 def get_queue():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     external_api_url = f"{external_api_url}/queue"
 
     try:
@@ -308,7 +323,7 @@ def get_queue():
     
 @app.route('/delete-queue-item', methods=['POST'])
 def delete_queue_item():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
     incoming_data = request.json
     
     external_api_url = f"{external_api_url}/queue"
@@ -323,7 +338,7 @@ def delete_queue_item():
 # Stops currently running execution
 @app.route('/interrupt', methods=['POST'])
 def interrupt_execution():
-    external_api_url = request.args.get('url', DEFAULT_EXTERNAL_API_URL)
+    external_api_url = DEFAULT_EXTERNAL_API_URL
 
     external_api_url = f"{external_api_url}/interrupt"
 
