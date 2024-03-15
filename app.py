@@ -263,6 +263,7 @@ def upload_image():
         image = Image.open(file)
         
         file_ext = os.path.splitext(filename)[1]
+        print("file_ext: ",file_ext)
         if file_ext.lower() == '.png':
             # Save the image as PNG
             image.save(save_path, format='PNG')
