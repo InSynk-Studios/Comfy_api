@@ -258,21 +258,25 @@ def upload_image():
         return jsonify({"error": "No image selected for uploading"}), 400
 
     if file:
-        filename = secure_filename(file.filename)
-        save_path = os.path.join('../ComfyUI/input', filename)
-        image = Image.open(file)
-        
-        file_ext = os.path.splitext(filename)[1]
-        print("file_ext: ",file_ext)
-        if file_ext.lower() == '.png':
-            # Save the image as PNG
-            image.save(save_path, format='PNG')
-        else:
-            rgb_im = image.convert('RGB')
-            # Save the image in the desired format
-            new_filename = os.path.splitext(filename)[0] + '.jpg'
-            save_path = os.path.join('../ComfyUI/input', new_filename)
-            rgb_im.save(save_path, format='JPEG')
+        try:
+            filename = secure_filename(file.filename)
+            save_path = os.path.join('../ComfyUI/input', filename)
+            image = Image.open(file)
+            
+            file_ext = os.path.splitext(filename)[1]
+            print("file_ext: ",file_ext)
+            if file_ext.lower() == '.png':
+                # Save the image as PNG
+                image.save(save_path, format='PNG')
+            else:
+                rgb_im = image.convert('RGB')
+                # Save the image in the desired format
+                new_filename = os.path.splitext(filename)[0] + '.jpg'
+                save_path = os.path.join('../ComfyUI/input', new_filename)
+                rgb_im.save(save_path, format='JPEG')
+        except Exception as e:
+            print(e)
+            return jsonify({"error": "The image provided is invalid. Please try again"}), 400
         
         return jsonify({"success": "Image successfully uploaded and saved"}), 200
     else:
