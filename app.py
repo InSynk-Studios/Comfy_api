@@ -15,6 +15,7 @@ import requests
 from v2.routes.app import app as app_v2
 from routes.scrape import scrape
 from routes.auth import auth
+from routes.sam import sam
 from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
@@ -35,6 +36,7 @@ app = Flask(__name__)
 CORS(app)
 app.register_blueprint(app_v2)
 app.register_blueprint(scrape)
+app.register_blueprint(sam)
 app.register_blueprint(auth)
 register_heif_opener()
 

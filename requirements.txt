@@ -18,3 +18,4 @@ flask-bcrypt
 pymongo
 PyJWT
 pymongo[srv]
+segment_anything
