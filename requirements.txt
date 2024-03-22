@@ -19,3 +19,4 @@ pymongo
 PyJWT
 pymongo[srv]
 segment_anything
+gunicorn
