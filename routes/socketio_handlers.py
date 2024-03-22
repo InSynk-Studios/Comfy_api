@@ -1,4 +1,4 @@
-from ..app import socketio, clients, generations, DEFAULT_EXTERNAL_API_URL, SELF_URL
+from app import socketio, clients, generations, DEFAULT_EXTERNAL_API_URL, SELF_URL
 from flask import request
 import time
 import requests
