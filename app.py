@@ -121,19 +121,23 @@ def delete_and_interrupt(executions, id):
 
 def emit_queue_length():
     while True:
-        if not clients:
+        try:
+            if not clients:
+                socketio.sleep(5)
+                continue
+            url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
+            response = requests.get(url)
+            queue_data = response.json()
+            running_executions = queue_data['queue_running']                
+            pending_executions = queue_data['queue_pending']      
+            queueSize = len(running_executions) + len(pending_executions)          
+            print('Queue Size: ', queueSize)
+            socketio.emit('queue_length', {'count': queueSize})
+            socketio.sleep(3)
+        except Exception as e:
+            print(f"Error in emit_queue_length: {e}")
             socketio.sleep(5)
-            continue
-        print('Emitting queue length...')
-        url = f"{DEFAULT_EXTERNAL_API_URL}/queue"
-        response = requests.get(url)
-        queue_data = response.json()
-        running_executions = queue_data['queue_running']                
-        pending_executions = queue_data['queue_pending']                
-        socketio.emit('queue_length', {'count': len(running_executions) + len(pending_executions)})
-        socketio.sleep(3)
-        
-# socketio.start_background_task(check_for_generations)
+
 socketio.start_background_task(emit_queue_length)
 
 @app.route('/latest', methods=['GET'])
@@ -143,7 +147,6 @@ def get_latest_files():
   
   masked = request.args.get('masked', 'false').lower() == 'true'
 
-  # Get the latest image file
   image_files = glob.glob(os.path.join(image_dir, '*.jpg'))
   image_files += glob.glob(os.path.join(image_dir, '*.png'))
   image_files += glob.glob(os.path.join(image_dir, '*.webp'))  
@@ -155,7 +158,6 @@ def get_latest_files():
 
   latest_image = max(image_files, key=os.path.getctime)
 
-  # Get the latest text file
   text_files = glob.glob(os.path.join(text_dir, '*.txt'))
   latest_text = max(text_files, key=os.path.getctime)
 
@@ -236,7 +238,6 @@ def get_description_by_fileName_v2():
 def get_latest_tags():
   text_dir = '../ComfyUI/output/'
 
-  # Get the latest text file
   text_files = glob.glob(os.path.join(text_dir, '*.txt'))
   latest_text = max(text_files, key=os.path.getctime)
 
@@ -251,7 +252,6 @@ def get_latest_media():
   type = request.args.get('type')
   media_dir = '../ComfyUI/output/'
 
-  # Get the latest text file
   image_files = glob.glob(os.path.join(media_dir, '*.jpg'))
   image_files += glob.glob(os.path.join(media_dir, '*.png'))
   image_files += glob.glob(os.path.join(media_dir, '*.webp'))   
@@ -289,11 +289,9 @@ def upload_image():
             file_ext = os.path.splitext(filename)[1]
             print("file_ext: ",file_ext)
             if file_ext.lower() == '.png':
-                # Save the image as PNG
                 image.save(save_path, format='PNG')
             else:
                 rgb_im = image.convert('RGB')
-                # Save the image in the desired format
                 new_filename = os.path.splitext(filename)[0] + '.jpg'
                 save_path = os.path.join('../ComfyUI/input', new_filename)
                 rgb_im.save(save_path, format='JPEG')
@@ -366,7 +364,6 @@ def delete_queue_item():
         print(e)
         return jsonify({"error": str(e)}), 500
     
-# Stops currently running execution
 @app.route('/interrupt', methods=['POST'])
 def interrupt_execution():
     external_api_url = DEFAULT_EXTERNAL_API_URL
