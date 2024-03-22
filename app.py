@@ -211,6 +211,23 @@ def get_file_by_fileName_v2():
     else:
         return "File not found.", 204
 
+@app.route('/api/product-description', methods=['GET'])
+def get_description_by_fileName_v2():
+    dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
+    specific_filename = request.args.get('filename')
+
+    if specific_filename:
+        file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
+        if file_paths:
+            with open(file_paths[0], 'r') as file:
+                description = file.read()
+        
+            return {"description": description}, 200
+        else:
+            return "File not found.", 204
+    else:
+        return "File not found.", 204
+
 @app.route('/latest-tags', methods=['GET'])
 def get_latest_tags():
   text_dir = '../ComfyUI/output/'
