@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
 import jwt
+import logging
 
 DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
 SELF_URL = os.getenv('SELF_URL')
@@ -31,6 +32,7 @@ s3_client = boto3.client(
     aws_secret_access_key=os.getenv('AWS_S3_SECRET_ACCESS_KEY'),
     region_name=os.getenv('AWS_S3_REGION')
 )
+logging.basicConfig(filename='error.log', level=logging.ERROR)
 
 app = Flask(__name__)
 CORS(app)
@@ -137,6 +139,7 @@ def emit_queue_length():
             socketio.sleep(3)
         except Exception as e:
             print(f"Error in emit_queue_length: {e}")
+            logging.error(f"Error in emit_queue_length: {e}")
             socketio.sleep(5)
 
 socketio.start_background_task(emit_queue_length)
