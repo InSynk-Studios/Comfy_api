@@ -219,6 +219,10 @@ def get_description_by_fileName_v2():
     if specific_filename:
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
+            _, ext = os.path.splitext(file_paths[0])
+            if ext.lower() != '.txt':
+                return "Error: The file is not a .txt file.", 400
+
             with open(file_paths[0], 'r') as file:
                 description = file.read()
         
