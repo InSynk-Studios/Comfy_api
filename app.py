@@ -209,8 +209,8 @@ def get_file_by_fileName_v2():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             with Image.open(file_paths[0]) as img:
-                new_file_path = os.path.join(dir, 'new_' + specific_filename)
-                img.save(new_file_path)
+                new_file_path = os.path.join(dir, 'new_' + specific_filename + '.jpeg')
+                img.save(new_file_path, 'JPEG')
 
             s3_file_name = os.path.basename(new_file_path)
             s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'Metadata': {}, 'ContentDisposition': 'attachment'})
