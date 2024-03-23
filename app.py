@@ -209,7 +209,7 @@ def get_file_by_fileName_v2():
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
         if file_paths:
             s3_file_name = os.path.basename(file_paths[0])
-            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'ContentDisposition': 'attachment'})
+            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'Metadata': {}, 'ContentDisposition': 'attachment'})
             downloadURL = f"https://{os.getenv('AWS_S3_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION')}.amazonaws.com/{s3_file_name}"   
             return {"downloadURL": downloadURL}, 200
         else:
