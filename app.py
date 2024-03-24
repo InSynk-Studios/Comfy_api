@@ -377,7 +377,10 @@ def postProcess(filename):
         "prompt": postProcessing_workflow,
         "front": True
     }
+    print(prompt)
+    print(filename)
     post_processing_response = requests.post(external_api_url, json=prompt)
+    print(post_processing_response.json())
 
     return post_processing_response.json()
     
