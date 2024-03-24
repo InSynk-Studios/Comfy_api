@@ -222,6 +222,27 @@ def get_file_by_fileName_v2():
     else:
         return "File not found.", 204
 
+@app.route('/file/v3', methods=['GET'])
+def get_file_by_fileName_v3():
+    dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
+    specific_filename = request.args.get('filename')
+    
+    if specific_filename:
+        file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
+        if file_paths:
+            s3_file_name = os.path.basename(file_paths[0])
+            s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'ContentDisposition': 'attachment'})
+            downloadURL = f"https://{os.getenv('AWS_S3_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION')}.amazonaws.com/{s3_file_name}"   
+            return {"downloadURL": downloadURL}, 200
+        else:
+            pre_file_paths = glob.glob(os.path.join(dir, '*' + "pre_" + specific_filename + '*'))
+            if pre_file_paths:
+                postProcess(specific_filename)
+            else:
+                return "File not found.", 204
+    else:
+        return "File not found.", 204
+
 @app.route('/api/product-description', methods=['GET'])
 def get_description_by_fileName_v2():
     dir = os.path.join('/home/azureuser/workspace', 'ComfyUI', 'output')
@@ -313,7 +334,7 @@ def upload_image():
         return jsonify({"error": "Allowed image types are - png, jpg, jpeg, webp"}), 400
 
 @app.route('/prompt', methods=['POST'])
-def call_external_api():
+def execute_comfy():
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
@@ -330,12 +351,10 @@ def call_external_api():
 
     incoming_data = request.json
     external_api_url = f"{external_api_url}/prompt"
-    print(incoming_data)
-    print(external_api_url)
 
     try:
         response = requests.post(external_api_url, json=incoming_data)
-        print(response.json())
+        
         if client_id not in generations:
             generations[client_id] = []
 
@@ -345,6 +364,22 @@ def call_external_api():
     except requests.RequestException as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+    
+def postProcess(filename):
+    external_api_url = DEFAULT_EXTERNAL_API_URL
+    with open("workflow_api_rewrite_metadata.json", "r") as file_json:
+        postProcessing_workflow = json.load(file_json)
+    
+    postProcessing_workflow['prompt']['1']['inputs']['image'] = "../ComfyUI/input/" + "pre_" + filename
+    postProcessing_workflow['prompt']['2']['inputs']['filename_prefix'] = filename
+    
+    prompt = {
+        "prompt": postProcessing_workflow,
+        "front": True
+    }
+    post_processing_response = requests.post(external_api_url, json=prompt)
+
+    return post_processing_response.json()
     
 @app.route('/get-queue', methods=['GET'])
 def get_queue():
