@@ -21,6 +21,7 @@ import boto3
 from flask_socketio import SocketIO, emit
 import jwt
 import logging
+import threading
 
 DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
 SELF_URL = os.getenv('SELF_URL')
@@ -98,10 +99,6 @@ def check_for_generations_ws():
                     print(message)
                     if message['type'] == 'executing':
                         data = message['data']
-                        print("================")
-                        print(data)
-                        print(generation)
-                        print("================")
                         if data['node'] is None and data['prompt_id'] == generation:
                             emit('generations', {'data': generation})
                             generations.pop(generation, None)
@@ -134,7 +131,6 @@ def emit_queue_length():
             running_executions = queue_data['queue_running']                
             pending_executions = queue_data['queue_pending']      
             queueSize = len(running_executions) + len(pending_executions)          
-            print('Queue Size: ', queueSize)
             socketio.emit('queue_length', {'count': queueSize})
             socketio.sleep(3)
         except Exception as e:
@@ -229,15 +225,17 @@ def get_file_by_fileName_v3():
     
     if specific_filename:
         file_paths = glob.glob(os.path.join(dir, '*' + specific_filename + '*'))
-        if file_paths:
+        if file_paths and 'pre_' not in file_paths[0]:
             s3_file_name = os.path.basename(file_paths[0])
             s3_client.upload_file(file_paths[0], os.getenv('AWS_S3_BUCKET_NAME'), s3_file_name, ExtraArgs={'ContentDisposition': 'attachment'})
             downloadURL = f"https://{os.getenv('AWS_S3_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION')}.amazonaws.com/{s3_file_name}"   
             return {"downloadURL": downloadURL}, 200
         else:
-            pre_file_paths = glob.glob(os.path.join(dir, '*' + "pre_" + specific_filename + '*'))
-            if pre_file_paths:
-                postProcess(specific_filename)
+            pre_file_paths = glob.glob(os.path.join(dir, '*' + "pre_" + specific_filename.split("processed_")[1] + '*'))
+            if len(pre_file_paths) > 0:
+                thread = threading.Thread(target=postProcess, args=(specific_filename.split("processed_")[1],))
+                thread.start()
+                return "Post processing in progress", 204
             else:
                 return "File not found.", 204
     else:
@@ -317,7 +315,6 @@ def upload_image():
             image = Image.open(file)
             
             file_ext = os.path.splitext(filename)[1]
-            print("file_ext: ",file_ext)
             if file_ext.lower() == '.png':
                 image.save(save_path, format='PNG')
             else:
@@ -367,20 +364,20 @@ def execute_comfy():
     
 def postProcess(filename):
     external_api_url = DEFAULT_EXTERNAL_API_URL
-    with open("workflow_api_rewrite_metadata.json", "r") as file_json:
+    print("Post processing...")
+    with open("./workflow/workflow_api_rewrite_metadata.json", "r") as file_json:
         postProcessing_workflow = json.load(file_json)
-    
-    postProcessing_workflow['prompt']['1']['inputs']['image'] = "../ComfyUI/input/" + "pre_" + filename
-    postProcessing_workflow['prompt']['2']['inputs']['filename_prefix'] = filename
+ 
+    postProcessing_workflow['1']['inputs']['image'] = "../output/" + "pre_" + filename + "_.png"
+    postProcessing_workflow['2']['inputs']['filename_prefix'] = "processed_"+filename.split("_000")[0]
     
     prompt = {
         "prompt": postProcessing_workflow,
         "front": True
     }
-    print(prompt)
-    print(filename)
+    
+    external_api_url = f"{external_api_url}/prompt"
     post_processing_response = requests.post(external_api_url, json=prompt)
-    print(post_processing_response.json())
 
     return post_processing_response.json()
     

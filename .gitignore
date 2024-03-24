@@ -6,3 +6,4 @@ routes/__pycache__/scrape.cpython-310.pyc
 checkpoint/*
 *.log
 error.log
+routes/__pycache__/*
