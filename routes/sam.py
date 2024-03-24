@@ -35,7 +35,7 @@ def createEmbedding():
 
     img = cv2.imdecode(np.frombuffer(image.read(), np.uint8), -1)
     predictor.set_image(img)
-    embedding = predictor.get_image_embedding().cuda().numpy()
+    embedding = predictor.get_image_embedding().cpu().numpy()
     
     np.save('embedding.npy', embedding)
 
