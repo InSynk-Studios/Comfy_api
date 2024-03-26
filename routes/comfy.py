@@ -1,33 +1,18 @@
 from flask import Blueprint, request, jsonify, send_file
-from pydantic import BaseModel
 from pydantic import ValidationError
-from typing import Optional
 from dotenv import load_dotenv
 import jwt
 import json
 import random
 import os
 import requests
+from dto.apparel_background_change_request import ApparelBackgroundChangeRequest
+from dto.product_background_change_request import ProductBackgroundChangeRequest
+from dto.description_generator_request import DescriptionGeneratorRequest
+from dto.magic_fix_request import MagicFixRequest
 
 load_dotenv()
 comfy = Blueprint('comfy', __name__)
-
-class BackgroundLora(BaseModel):
-    name: str
-    strength_model: int
-    strength_clip: int
-
-class ApparelBackgroundChangeRequest(BaseModel):
-    positivePrompt: str
-    negativePrompt: str
-    backgroundLora: Optional[BackgroundLora] = None
-    inputImagePath: str
-    inputMaskImagePath: str
-    inputFocusImagePath: str
-    faceDetailerPrompt: str
-    outputFileName: str
-    outputCount: Optional[int] = 1
-    seed: Optional[int] = None
 
 @comfy.route('/api/image-generation/apparel', methods=['POST'])
 def apparelBackgroundChange():
@@ -85,17 +70,6 @@ def apparelBackgroundChange():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
   
-
-class ProductBackgroundChangeRequest(BaseModel):
-    prompt: str
-    inputProductImagePath: str
-    backgroundRefImagePath: str
-    inputBlackAndWhiteImagePath: str
-    inputFocusImagePath: str
-    outputFileName: str
-    renderStrength: float
-    seed: Optional[int] = None
-    
 @comfy.route('/api/image-generation/product', methods=['POST'])
 def productBackgroundChange():
     try:
@@ -141,6 +115,80 @@ def productBackgroundChange():
     except Exception as e:
         return jsonify({"error": str(e)}), 400  
   
+@comfy.route('/api/text-generation/description', methods=['POST'])
+def descriptionGeneration():
+    try:
+        authenticate(request.headers.get('Authorization'))
+        target = request.args.get('target', None)
+        request_data = DescriptionGeneratorRequest.parse_obj(request.json)
+    
+        workflow = None
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        if target == "product":
+            file_path = os.path.join(base_dir, "workflow", "product_background_change", "generate_description.json")
+        elif target == "apparel":
+            file_path = os.path.join(base_dir, "workflow", "apparel_background_change", "generate_description.json")
+        else:
+            return jsonify({"error": "Invalid target"}), 400
+            
+        with open(file_path, "r") as f:
+            workflow = json.load(f)        
+        
+        workflow["5"]["inputs"]["image"] = request_data.inputImagePath
+        workflow["20"]["inputs"]["filename_prefix"] = request_data.outputFileName
+        
+        data = {
+            "prompt": workflow,
+            "front": True
+        }
+        
+        try:
+            comfy_url = f'{os.getenv("COMFY_URL")}/prompt'
+            response = requests.post(comfy_url, json=data)
+            
+            return jsonify(response.json()), response.status_code
+        except requests.RequestException as e:
+            return jsonify({"error": str(e)}), 400
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+ 
+@comfy.route('/api/image-generation/magic-fix', methods=['POST'])
+def magicFix():
+    try:
+        authenticate(request.headers.get('Authorization'))
+        client_id = request.args.get('clientId', None)
+        request_data = MagicFixRequest.parse_obj(request.json)
+
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        file_path = os.path.join(base_dir, "workflow", "apparel_background_change", "magic_fix.json")
+            
+        with open(file_path, "r") as f:
+            workflow = json.load(f)  
+        
+        workflow["2"]["inputs"]["image"] = request_data.inputImagePath
+        workflow["7"]["inputs"]["image"] = request_data.inputMaskImagePath
+        workflow["1"]["inputs"]["image"] = request_data.inputGeneratedImagePath
+        workflow["11"]["inputs"]["filename_prefix"] = request_data.outputFileName
+        
+        data = {
+            "prompt": workflow,
+            "client_id": client_id,
+            "front": True
+        }
+        
+        try:
+            comfy_url = f'{os.getenv("COMFY_URL")}/prompt'
+            response = requests.post(comfy_url, json=data)
+            
+            return jsonify(response.json()), response.status_code
+        except requests.RequestException as e:
+            return jsonify({"error": str(e)}), 400
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
 def authenticate(token):
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
