@@ -75,9 +75,7 @@ def backgroundChange():
         }
         
         try:
-            comfy_url = f'{os.getenv("COMFY_URL")}/prompt'  # Replace double quotes with single quotes
-
-            print(comfy_url)
+            comfy_url = f'{os.getenv("COMFY_URL")}/prompt'
             response = requests.post(comfy_url, json=data)
             
             return jsonify(response.json()), response.status_code

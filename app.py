@@ -366,7 +366,6 @@ def execute_comfy():
     
 def postProcess(filename):
     external_api_url = DEFAULT_EXTERNAL_API_URL
-    print("Post processing...")
     with open("./workflow/workflow_api_rewrite_metadata.json", "r") as file_json:
         postProcessing_workflow = json.load(file_json)
  
