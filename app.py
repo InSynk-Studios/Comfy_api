@@ -16,6 +16,7 @@ from v2.routes.app import app as app_v2
 from routes.scrape import scrape
 from routes.auth import auth
 from routes.sam import sam
+from routes.comfy import comfy
 from dotenv import load_dotenv
 import boto3
 from flask_socketio import SocketIO, emit
@@ -23,7 +24,7 @@ import jwt
 import logging
 import threading
 
-DEFAULT_EXTERNAL_API_URL = os.getenv('EXTERNAL_API_URL')
+DEFAULT_EXTERNAL_API_URL = os.getenv('COMFY_URL')
 SELF_URL = os.getenv('SELF_URL')
 
 load_dotenv()
@@ -41,6 +42,7 @@ app.register_blueprint(app_v2)
 app.register_blueprint(scrape)
 app.register_blueprint(sam)
 app.register_blueprint(auth)
+app.register_blueprint(comfy)
 register_heif_opener()
 
 socketio = SocketIO(app, cors_allowed_origins="*")
